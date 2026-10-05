@@ -1,6 +1,10 @@
 <h1>MiniSpec</h1>
 <p class="lead">自作テストフレームワークで、4 つのアプリのテストをまとめて実行します。
+<% if MiniWeb::IN_BROWSER -%>
+裏では、ブラウザの中にもう 1 つ別の Ruby を起こして、テストを走らせています (このページの状態を汚さないため)。</p>
+<% else -%>
 裏では <code>ruby run_specs.rb -f json</code> を別プロセスで起動しています。</p>
+<% end -%>
 
 <form class="toolbar" method="get" action="<%= url("/") %>">
   <input type="hidden" name="run" value="1">
@@ -18,7 +22,7 @@
       <span class="pill <%= failures.zero? ? 'pass' : 'fail' %>"><%= failures.zero? ? "✓ すべて成功" : "✗ #{failures} 件失敗" %></span>
       <span class="pill pass"><%= s.fetch("passed", 0) %> passed</span>
       <% if s["pending"] -%><span class="pill pend"><%= s["pending"] %> pending</span><% end -%>
-      <span class="muted" style="font-size:13px"><%= s["total"] %> 件 ・ テスト <%= format("%.3f", s["elapsed"]) %> 秒 (プロセス起動込み <%= format("%.2f", @wall) %> 秒)</span>
+      <span class="muted" style="font-size:13px"><%= s["total"] %> 件 ・ テスト <%= format("%.3f", s["elapsed"]) %> 秒 (<%= MiniWeb::IN_BROWSER ? "Ruby の起動込み" : "プロセス起動込み" %> <%= format("%.2f", @wall) %> 秒)</span>
     </div>
     <% if s["total"].zero? -%>
       <p class="muted">「<%= h @filter %>」に一致するテストはありません。</p>

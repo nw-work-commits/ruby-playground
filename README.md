@@ -14,7 +14,7 @@
 | `03_adventure` | テキストアドベンチャーエンジン (3 シナリオ + エディタ) | DSL / パターンマッチ (`case/in`) / `Marshal` によるセーブ / `binding.local_variable_get` / Prism による構文木の検査 |
 | `04_miniweb` | Sinatra 風 Web フレームワーク + TODO・日程表 | クラスマクロ / `catch`/`throw` / ERB + `binding` / Rack 方式のミドルウェア / `OpenSSL::HMAC` / `TCPServer` + `Thread` / `slice_when` |
 
-## ブラウザで全部見る (Ruby Playground)
+## 手元のサーバーで全部見る (Ruby Playground)
 
 ```
 ruby web/server.rb     # → http://127.0.0.1:3000
@@ -25,7 +25,7 @@ ruby web/server.rb     # → http://127.0.0.1:3000
 | `/` | ポータル |
 | `/kakeibo` | 家計簿: 月別のカテゴリ棒グラフ (予算線付き)・月ごとの推移・前月比・明細。フォームから追加すると DSL ファイルに 1 行追記される。`/kakeibo/source` で DSL ファイルを色付き表示 |
 | `/kakeibo/import` | 銀行・カードの明細 CSV を取り込む (下の「CSV 取り込み」) |
-| `/spec` | 「▶ テストを実行」で全テストを別プロセスで実行し、結果をツリー表示 (名前で絞り込み可) |
+| `/spec` | 「▶ テストを実行」で全テストを別プロセスで実行し、結果をツリー表示 (名前で絞り込み可)。ブラウザ版では、別プロセスの代わりに別の Ruby VM で実行 |
 | `/adventure` | 3 つのシナリオをブラウザで遊べる。移動・会話はボタンでもできる |
 | `/adventure/editor` | シナリオを DSL で書いて、その場で試し遊び・保存 |
 | `/todo` | TODO・日程表 (リスト表示と週表示) |

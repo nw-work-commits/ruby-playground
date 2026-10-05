@@ -19,6 +19,9 @@ require "stringio"
 require "openssl"
 
 module MiniWeb
+  # ブラウザの中の Ruby (ruby.wasm) で動いているか。画面の説明文を、サーバー版と出し分けるのに使う
+  IN_BROWSER = RUBY_PLATFORM.start_with?("wasm")
+
   Route = Data.define(:pattern, :block)
 
   # ------------------------------------------------------------------ Request

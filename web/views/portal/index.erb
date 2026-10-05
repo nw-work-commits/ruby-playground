@@ -1,7 +1,12 @@
 <section class="hero">
   <h1>Ruby Playground</h1>
   <p class="lead">Ruby の特性を活かした 4 つのアプリ。外部 gem なし、標準ライブラリだけで作っています。<br>
+<% if MiniWeb::IN_BROWSER -%>
+  このページも含めて、すべて自作の Web フレームワーク <code>MiniWeb</code> で動いています。
+  いまはサーバーの代わりに、ブラウザの中の Ruby (<code>ruby.wasm</code>) が動かしています。</p>
+<% else -%>
   このページも含めて、すべて自作の Web フレームワーク <code>MiniWeb</code> と自作 HTTP サーバーで動いています。</p>
+<% end -%>
 </section>
 
 <div class="grid cols-2">

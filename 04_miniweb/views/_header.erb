@@ -4,7 +4,11 @@
 <div class="head">
   <div>
     <h1><img src="<%= url("/favicon.svg") %>" alt=""> TODO・日程表</h1>
+    <% if MiniWeb::IN_BROWSER -%>
+    <p class="sub">自作フレームワークで動いています（ブラウザの中の Ruby が実行中）</p>
+    <% else -%>
     <p class="sub">自作フレームワーク + 自作 HTTP サーバーで動いています</p>
+    <% end -%>
   </div>
   <nav class="views" aria-label="表示切り替え">
     <a href="<%= url("/") %>" class="<%= 'on' unless @monday %>">リスト</a>
