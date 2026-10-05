@@ -1,0 +1,18 @@
+<section class="hero">
+  <h1>Ruby Playground</h1>
+  <p class="lead">Ruby の特性を活かした 4 つのアプリ。外部 gem なし、標準ライブラリだけで作っています。<br>
+  このページも含めて、すべて自作の Web フレームワーク <code>MiniWeb</code> と自作 HTTP サーバーで動いています。</p>
+</section>
+
+<div class="grid cols-2">
+  <% Portal::APPS.each do |app| -%>
+    <a class="card app-card" href="<%= app[:path] %>">
+      <span class="num"><%= app[:num] %></span>
+      <h2><%= app[:name] %></h2>
+      <p><%= app[:text] %></p>
+      <span class="tags">
+        <% app[:tags].each do |tag| -%><span class="tag"><%= tag %></span><% end -%>
+      </span>
+    </a>
+  <% end -%>
+</div>

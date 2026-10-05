@@ -1,0 +1,151 @@
+<h1>家計簿 DSL</h1>
+<p class="lead">中身は Ruby コードの <a href="<%= url("/source") %>"><code><%= h File.basename(ledger_path) %></code></a> を、表示のたびに読み込んでいます。</p>
+
+<% if @load_error -%>
+  <div class="flash error">家計簿ファイルを読み込めませんでした: <%= h @load_error %></div>
+<% elsif @month.nil? -%>
+  <p class="card">まだデータがありません。下のフォームから追加してください。</p>
+<% else -%>
+  <% income = @current.incomes.total; expense = @current.expenses.total; balance = income - expense -%>
+  <% prev_expense = @trend.to_h[(Date.strptime(@month, "%Y-%m") << 1).strftime("%Y-%m")] -%>
+
+  <div class="toolbar">
+    <div class="month-tabs" role="tablist" aria-label="月">
+      <% @months.each do |m| -%>
+        <a href="<%= url("/?month=#{m}") %>" class="<%= 'on' if m == @month %>"><%= m.sub("-", "年") %>月</a>
+      <% end -%>
+    </div>
+    <span class="spacer"></span>
+    <a class="btn" href="<%= url("/import") %>">明細 CSV を取り込む</a>
+    <a class="btn" href="<%= url("/source") %>">DSL ファイルを見る</a>
+  </div>
+
+  <div class="grid cols-3" style="margin-bottom:16px">
+    <div class="card stat"><div class="label">収入</div><div class="value"><%= yen income %></div></div>
+    <div class="card stat">
+      <div class="label">支出</div><div class="value"><%= yen expense %></div>
+      <% if prev_expense -%>
+        <% diff = expense - prev_expense -%>
+        <div class="note">前月比 <span class="<%= diff.positive? ? 'up' : 'down' %>"><%= diff.positive? ? '▲' : '▼' %> <%= yen diff.abs %></span></div>
+      <% end -%>
+    </div>
+    <div class="card stat"><div class="label">収支</div><div class="value <%= 'neg' if balance.negative? %>"><%= yen balance %></div></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-bottom:16px">
+    <section class="card">
+      <h2>カテゴリ別の支出</h2>
+      <% budgets = @ledger.budgets -%>
+      <% scale = [@by_category.values.max.to_i, *@by_category.keys.filter_map { budgets[_1] }].max -%>
+      <div class="hbars">
+        <% @by_category.each do |category, amount| -%>
+          <% limit = budgets[category] -%>
+          <div class="hbar">
+            <span class="name" title="<%= label(category) %>"><%= label(category) %></span>
+            <span class="track" data-tip="<%= label(category) %> <%= yen amount %><%= " / 予算 #{yen limit}" if limit %>">
+              <span class="fill" style="width:<%= pct(amount, scale) %>%"></span>
+              <% if limit -%><span class="budget" style="left:calc(<%= pct(limit, scale) %>% - 1px)"></span><% end -%>
+            </span>
+            <span class="amount"><%= yen amount %></span>
+            <% if limit && amount > limit -%>
+              <span class="over">⚠ 予算超過 +<%= yen amount - limit %></span>
+            <% end -%>
+          </div>
+        <% end -%>
+      </div>
+      <div class="legend"><span><span class="tick"></span>予算 (budget で設定したカテゴリのみ)</span></div>
+    </section>
+
+    <section class="card">
+      <h2>月ごとの支出</h2>
+      <% trend_max = @trend.map(&:last).max.to_i -%>
+      <div class="columns">
+        <% @trend.each do |m, total| -%>
+          <a class="column <%= 'on' if m == @month %>" href="<%= url("/?month=#{m}") %>" data-tip="<%= m %> 支出 <%= yen total %>">
+            <span class="val"><%= yen total %></span>
+            <span class="bar" style="height:<%= pct(total, trend_max) * 0.82 %>%"></span>
+          </a>
+        <% end -%>
+      </div>
+      <div class="column-labels">
+        <% @trend.each do |m, _| -%><span><%= m.split("-").last.to_i %>月</span><% end -%>
+      </div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">棒をクリックするとその月を表示します</p>
+    </section>
+  </div>
+
+  <div class="grid cols-2" style="margin-bottom:16px">
+    <section class="card">
+      <h2>前月比</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>カテゴリ</th><th class="num">今月</th><th class="num">前月</th><th class="num">増減</th></tr></thead>
+          <tbody>
+            <% @compare.sort_by { -_2[2].abs }.each do |category, (now, before, diff)| -%>
+              <tr>
+                <td><%= label(category) %></td>
+                <td class="num"><%= yen now %></td>
+                <td class="num muted"><%= yen before %></td>
+                <td class="num <%= diff.positive? ? 'up' : diff.negative? ? 'down' : 'muted' %>">
+                  <%= diff.positive? ? '▲' : diff.negative? ? '▼' : '' %> <%= yen diff.abs %>
+                </td>
+              </tr>
+            <% end -%>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>追加する</h2>
+      <p class="muted" style="font-size:13px;margin:-6px 0 12px">DSL ファイルの末尾に 1 行追記されます。</p>
+      <form class="entry" method="post" action="<%= url("/entries") %>">
+        <label class="field">種類
+          <select name="kind"><option value="expense">支出</option><option value="income">収入</option></select>
+        </label>
+        <label class="field">日付
+          <input type="date" name="date" value="<%= Date.today.iso8601 %>" required>
+        </label>
+        <label class="field wide">内容
+          <input type="text" name="title" maxlength="40" placeholder="ランチ" required>
+        </label>
+        <label class="field">金額 (円)
+          <input type="number" name="amount" min="1" step="1" placeholder="980" required>
+        </label>
+        <label class="field">カテゴリ
+          <select name="category">
+            <optgroup label="支出">
+              <% KakeiboWeb::EXPENSE_CATEGORIES.each do |c| -%><option value="<%= c %>"><%= label(c) %></option><% end -%>
+            </optgroup>
+            <optgroup label="収入">
+              <% KakeiboWeb::INCOME_CATEGORIES.each do |c| -%><option value="<%= c %>"><%= label(c) %></option><% end -%>
+            </optgroup>
+          </select>
+        </label>
+        <label class="field">新しいカテゴリ (任意)
+          <input type="text" name="new_category" pattern="[a-z][a-z0-9_]*" placeholder="hobby">
+        </label>
+        <button class="primary">追加</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2><%= @month.sub("-", "年") %>月の明細</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>日付</th><th>カテゴリ</th><th>内容</th><th class="num">金額</th></tr></thead>
+        <tbody>
+          <% @current.sort_by { [_1.date, _1.income? ? 0 : 1] }.each do |e| -%>
+            <tr>
+              <td class="muted"><%= e.date.strftime("%-m/%-d") %></td>
+              <td><span class="tag"><%= label(e.category) %></span></td>
+              <td><%= h e.title %></td>
+              <td class="num"><%= e.income? ? "+" : "−" %><%= yen e.amount %></td>
+            </tr>
+          <% end -%>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<% end -%>

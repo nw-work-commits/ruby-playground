@@ -1,0 +1,65 @@
+<p><a href="<%= url("/") %>">← 家計簿に戻る</a></p>
+<h1>明細 CSV の取り込み</h1>
+<p class="lead">銀行やカードの明細 CSV を読み込んで、家計簿 DSL に追記します。Shift_JIS の CSV もそのまま読めます。
+取り込む前に、カテゴリと重複を確認する画面が出ます。</p>
+
+<div class="grid cols-2">
+  <section class="card">
+    <h2>1. ファイルを選ぶ</h2>
+    <form method="post" action="<%= url("/import") %>" id="upload" class="stack">
+      <input type="hidden" name="data" id="data">
+      <input type="hidden" name="filename" id="filename">
+      <label class="field">CSV ファイル
+        <input type="file" id="file" accept=".csv,text/csv">
+      </label>
+      <label class="field">または、中身を貼り付け
+        <textarea name="text" rows="5" placeholder="日付,内容,金額&#10;2026/10/01,セブン-イレブン,540" style="font:13px var(--mono);border:1px solid var(--line);border-radius:8px;padding:8px;background:transparent;color:inherit"></textarea>
+      </label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="primary">読み込んで確認する</button>
+        <a class="btn" href="<%= url("/import/sample.csv") %>">サンプル CSV (Shift_JIS)</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>振り分けルール <span class="muted" style="font-weight:400;font-size:13px">(<code><%= h File.basename(rules_path) %></code>)</span></h2>
+    <p class="muted" style="font-size:13px;margin-top:-6px">上から順に調べて、最初に一致したものを使います。これも Ruby の DSL です。</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>一致する内容</th><th>振り分け先</th></tr></thead>
+        <tbody>
+          <% @rules.each do |r| -%>
+            <tr>
+              <td><code><%= h(r.pattern.is_a?(Regexp) ? r.pattern.inspect : r.pattern.inspect) %></code></td>
+              <td>
+                <% case r.kind
+                   when :skip then -%><span class="tag">除外</span> <span class="muted" style="font-size:12px"><%= h r.reason %></span>
+                <% when :income then -%>収入: <%= label(r.category) %>
+                <% else -%><%= label(r.category) %>
+                <% end -%>
+              </td>
+            </tr>
+          <% end -%>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  // ファイルを Base64 にして送る (文字コードの判定はサーバー側で行う)
+  const form = document.getElementById("upload");
+  const file = document.getElementById("file");
+  form.addEventListener("submit", (e) => {
+    if (!file.files.length) return;
+    e.preventDefault();
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.getElementById("data").value = reader.result;
+      document.getElementById("filename").value = file.files[0].name;
+      form.submit();
+    };
+    reader.readAsDataURL(file.files[0]);
+  });
+</script>

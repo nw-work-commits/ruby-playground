@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= h page_title %></title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/playground.css">
+</head>
+<body>
+  <header class="site">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/favicon.svg" alt=""> Ruby Playground</a>
+      <nav>
+        <% PlaygroundApp::NAV.each do |path, label| -%>
+          <a href="<%= path %>" class="<%= 'on' if current_section == path %>"><%= label %></a>
+        <% end -%>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <% if request.env.key?("miniweb.session") -%>
+      <% %w[notice error].each do |kind| -%>
+        <% if flash[kind] -%>
+          <div class="flash <%= kind %>" role="status"><%= h flash[kind] %></div>
+        <% end -%>
+      <% end -%>
+    <% end -%>
+    <%= yield %>
+  </main>
+</body>
+</html>

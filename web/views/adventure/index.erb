@@ -1,0 +1,59 @@
+<div class="toolbar">
+  <div>
+    <h1 style="margin:0">テキストアドベンチャー</h1>
+    <p class="lead" style="margin:4px 0 0">世界はすべて DSL で書かれています。日本語の文章でコマンドを打って遊びます。</p>
+  </div>
+  <span class="spacer"></span>
+  <a class="btn primary" href="<%= url("/editor") %>">✎ シナリオを書く</a>
+</div>
+
+<% if @game && !@game.finished -%>
+  <div class="flash notice" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+    <span>「<%= h @game.world.title %>」をプレイ中です (<%= @game.state.turns %> ターン)</span>
+    <a class="btn" href="<%= url("/play") %>">続きから遊ぶ</a>
+  </div>
+<% end -%>
+
+<div class="grid cols-2">
+  <% @worlds.each do |world| -%>
+    <% custom = @custom.include?(world.id) -%>
+    <section class="card world-card">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <h2 style="margin:0"><%= h world.title %></h2>
+        <% if custom -%><span class="tag">自作</span><% end -%>
+        <% if world.id == :mendou -%><span class="tag">ポートフォリオより</span><% end -%>
+      </div>
+      <p><%= h world.intro_text %></p>
+      <p class="muted" style="font-size:13px">部屋 <%= world.rooms.size %> ・ アイテム <%= world.items.size %> ・ 登場人物 <%= world.npcs.size %></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:auto">
+        <form method="post" action="<%= url("/new") %>">
+          <input type="hidden" name="world" value="<%= world.id %>">
+          <button class="primary">はじめから遊ぶ</button>
+        </form>
+        <a class="btn" href="<%= url("/editor?from=#{world.id}") %>"><%= custom ? "編集する" : "これを元に書く" %></a>
+        <% if custom -%>
+          <form method="post" action="<%= url("/editor/delete") %>" onsubmit="return confirm('「<%= h world.title %>」を削除しますか？')">
+            <input type="hidden" name="id" value="<%= world.id %>">
+            <button>削除</button>
+          </form>
+        <% end -%>
+      </div>
+    </section>
+  <% end -%>
+</div>
+
+<section class="card" style="margin-top:16px">
+  <h2>コマンドの例</h2>
+  <div class="table-scroll">
+    <table>
+      <tbody>
+        <tr><td>移動</td><td><code>北</code> <code>南</code> <code>東</code> <code>西</code> <code>上</code> <code>下</code> (画面のボタンでも可)</td></tr>
+        <tr><td>拾う・使う・調べる</td><td><code>鍵を取る</code> <code>ランプを使う</code> <code>古文書を調べる</code></td></tr>
+        <tr><td>話す・渡す</td><td><code>村長と話す</code> <code>パンを門番に渡す</code></td></tr>
+        <tr><td>言う・答える</td><td><code>○○と言う</code> (合言葉や、問いかけへの答え)</td></tr>
+        <tr><td>作る</td><td><code>しくみを作る</code> (材料がそろったとき)</td></tr>
+        <tr><td>その他</td><td><code>見る</code> <code>持ち物</code> <code>セーブ</code> <code>ロード</code> <code>ヘルプ</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>

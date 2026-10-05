@@ -1,0 +1,5 @@
+<p><a href="<%= url("/") %>">← 家計簿に戻る</a></p>
+<h1><%= h File.basename(ledger_path) %></h1>
+<p class="lead">これが家計簿の「データ」です。見た目は書式ですが、中身は普通の Ruby コードで、<code>instance_eval</code> で評価されます。
+<code>food</code> や <code>fun</code> というメソッドはどこにも定義されておらず、<code>method_missing</code> が受け止めています。</p>
+<pre class="source"><code><%= highlight(@source) %></code></pre>

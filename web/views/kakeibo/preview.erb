@@ -1,0 +1,74 @@
+<% counts = @rows.map(&:status).tally
+   new_rows = @rows.select(&:importable?)
+   unmatched = new_rows.count { _1.rule.nil? }
+   status_label = { new: "取り込む", duplicate: "重複", skip: "除外", error: "読めない" } -%>
+<p><a href="<%= url("/import") %>">← ファイルを選び直す</a></p>
+<h1>取り込みの確認</h1>
+<p class="lead"><code><%= h @upload[:filename].to_s.empty? ? "貼り付けた CSV" : @upload[:filename] %></code> ・ 文字コード <b><%= @upload[:encoding] %></b> ・ <%= @rows.size %> 行</p>
+
+<section class="card" style="margin-bottom:16px">
+  <h2>列の対応</h2>
+  <form method="get" action="<%= url("/import/preview") %>" class="entry" id="mapping">
+    <input type="hidden" name="token" value="<%= h @token %>">
+    <% { date: "日付", title: "内容", expense: "支出の金額", income: "収入の金額 (別の列なら)" }.each do |field, name| -%>
+      <label class="field"><%= name %>
+        <select name="map_<%= field %>" onchange="this.form.submit()">
+          <option value="">(なし)</option>
+          <% @importer.headers.each_with_index do |head, i| -%>
+            <option value="<%= i %>" <%= "selected" if @mapping[field] == i %>><%= h head %></option>
+          <% end -%>
+        </select>
+      </label>
+    <% end -%>
+    <noscript><button>反映</button></noscript>
+  </form>
+</section>
+
+<div class="summary" style="margin-bottom:12px">
+  <span class="pill pass">取り込む <%= counts.fetch(:new, 0) %></span>
+  <% if counts[:duplicate] -%><span class="pill pend">重複 <%= counts[:duplicate] %></span><% end -%>
+  <% if counts[:skip] -%><span class="pill pend">除外 <%= counts[:skip] %></span><% end -%>
+  <% if counts[:error] -%><span class="pill fail">読めない <%= counts[:error] %></span><% end -%>
+  <% if unmatched.positive? -%><span class="muted" style="font-size:13px">ルールに一致しなかった <%= unmatched %> 件は「その他」にしています。カテゴリを選んで「次回から」にチェックすると、ルールとして覚えます。</span><% end -%>
+</div>
+
+<form method="post" action="<%= url("/import/commit") %>" class="card">
+  <input type="hidden" name="token" value="<%= h @token %>">
+  <% @mapping.each do |field, index| -%><input type="hidden" name="map_<%= field %>" value="<%= index %>"><% end -%>
+  <div class="table-scroll">
+    <table class="import">
+      <thead>
+        <tr><th><input type="checkbox" checked aria-label="すべて選択" onclick="document.querySelectorAll('.inc').forEach(c => c.checked = this.checked)"></th>
+            <th>日付</th><th>内容</th><th class="num">金額</th><th>カテゴリ</th><th>次回から</th><th>状態</th></tr>
+      </thead>
+      <tbody>
+        <% @rows.each do |row| -%>
+          <tr class="<%= row.status %>">
+            <td><% if row.importable? -%><input type="checkbox" class="inc" name="include_<%= row.index %>" value="1" checked aria-label="取り込む"><% end -%></td>
+            <td class="muted" style="white-space:nowrap"><%= row.date&.strftime("%-m/%-d") || "?" %></td>
+            <td><%= h row.title %></td>
+            <td class="num"><%= row.amount ? "#{row.kind == :income ? '+' : '−'}#{yen row.amount}" : "?" %></td>
+            <td>
+              <% if row.importable? -%>
+                <select name="category_<%= row.index %>" aria-label="カテゴリ">
+                  <% category_options.each do |value, name| -%>
+                    <option value="<%= value %>" <%= "selected" if row.category == value %>><%= name %></option>
+                  <% end -%>
+                </select>
+                <% if row.rule -%><span class="muted" style="font-size:11px" title="<%= h row.rule.pattern.inspect %>">ルール</span><% end -%>
+              <% end -%>
+            </td>
+            <td><% if row.importable? && row.kind == :expense -%><input type="checkbox" name="learn_<%= row.index %>" value="1" aria-label="この内容を次回からこのカテゴリにする" <%= "checked" if row.rule.nil? && row.category != :misc %>><% end -%></td>
+            <td><span class="tag st-<%= row.status %>"><%= status_label[row.status] %></span>
+                <% if row.note -%><div class="muted" style="font-size:11px"><%= h row.note %></div><% end -%></td>
+          </tr>
+        <% end -%>
+      </tbody>
+    </table>
+  </div>
+  <div class="toolbar" style="margin:16px 0 0">
+    <span class="muted" style="font-size:13px">確定すると、家計簿 DSL の末尾に <code>expense "…", 金額, :カテゴリ, on: "日付"</code> の形で追記されます。</span>
+    <span class="spacer"></span>
+    <button class="primary" <%= "disabled" if new_rows.empty? %>>選んだ明細を取り込む</button>
+  </div>
+</form>

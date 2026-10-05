@@ -1,0 +1,74 @@
+<% @back = "/week?date=#{@monday.iso8601}"
+   today = Date.today
+   @default_date = @days.include?(today) ? today.iso8601 : @monday.iso8601
+   hour_px = 48
+   conflict_ids = @conflicts.values.flatten(2).map(&:id).to_set -%>
+<%= erb :_header, layout: false %>
+
+<div class="card">
+  <%= erb :_form, layout: false %>
+
+  <div class="week-nav">
+    <a class="navbtn" href="<%= url("/week?date=#{(@monday - 7).iso8601}") %>" aria-label="前の週">←</a>
+    <a class="navbtn" href="<%= url("/week") %>">今週</a>
+    <a class="navbtn" href="<%= url("/week?date=#{(@monday + 7).iso8601}") %>" aria-label="次の週">→</a>
+    <b><%= @monday.strftime("%Y年%-m月%-d日") %> 〜 <%= (@monday + 6).strftime("%-m月%-d日") %></b>
+    <span class="spacer"></span>
+    <% if @week_cost.positive? -%><span class="tag-cost">今週の予定の費用 <%= yen @week_cost %></span><% end -%>
+  </div>
+
+  <% if conflict_ids.any? -%>
+    <div class="conflicts" role="alert">
+      <% @conflicts.each do |date, pairs| -%>
+        <% pairs.each do |a, b| -%>
+          <div>⚠ <%= date.strftime("%-m/%-d") %>(<%= TodoStore::WDAYS[date.wday] %>) 「<%= h a.title %>」<%= a.time_label %> と「<%= h b.title %>」<%= b.time_label %> が重なっています</div>
+        <% end -%>
+      <% end -%>
+    </div>
+  <% end -%>
+
+  <div class="cal-scroll">
+    <div class="cal" style="--hour: <%= hour_px %>px">
+      <div class="cal-corner"></div>
+      <% @days.each do |d| -%>
+        <div class="cal-day-head <%= 'today' if d == today %> <%= 'weekend' if d.saturday? || d.sunday? %>">
+          <span class="wd"><%= TodoStore::WDAYS[d.wday] %></span><span class="dd"><%= d.day %></span>
+        </div>
+      <% end -%>
+
+      <div class="cal-allday-label">終日</div>
+      <% @days.each do |d| -%>
+        <div class="cal-allday">
+          <% @allday[d].each do |t| -%>
+            <span class="chip <%= 'done' if t.done %>" title="<%= h t.title %>"><%= h t.title %></span>
+          <% end -%>
+        </div>
+      <% end -%>
+
+      <div class="cal-hours" style="height: <%= (@last_hour - @first_hour) * hour_px %>px">
+        <% (@first_hour...@last_hour).each do |h| -%>
+          <div class="hour" style="top: <%= (h - @first_hour) * hour_px %>px"><%= format("%02d:00", h) %></div>
+        <% end -%>
+      </div>
+      <% @days.each do |d| -%>
+        <div class="cal-col <%= 'today' if d == today %>" style="height: <%= (@last_hour - @first_hour) * hour_px %>px">
+          <% (@first_hour...@last_hour).each do |h| -%><div class="hline" style="top: <%= (h - @first_hour) * hour_px %>px"></div><% end -%>
+          <% lane_layout(@timed[d]).each do |t, lane, lanes| -%>
+            <% top = (t.start_min - @first_hour * 60) * hour_px / 60.0
+               height = [(t.end_min - t.start_min) * hour_px / 60.0, 22].max -%>
+            <div class="event <%= 'conflict' if conflict_ids.include?(t.id) %> <%= 'repeat' if t.repeating? %>"
+                 style="top: <%= top %>px; height: <%= height %>px; left: calc(<%= 100.0 * lane / lanes %>% + 2px); width: calc(<%= 100.0 / lanes %>% - 4px)"
+                 title="<%= h t.title %> <%= t.time_label %><%= " #{t.repeat_label}" if t.repeating? %><%= " #{yen t.cost}" if t.cost %>">
+              <span class="ev-title"><%= h t.title %></span>
+              <span class="ev-time"><%= t.time_label %><%= " ↻" if t.repeating? %></span>
+              <% if t.cost -%><span class="ev-cost"><%= yen t.cost %></span><% end -%>
+            </div>
+          <% end -%>
+          <% if d == today && (now = Time.now.hour * 60 + Time.now.min).between?(@first_hour * 60, @last_hour * 60) -%>
+            <div class="now" style="top: <%= (now - @first_hour * 60) * hour_px / 60.0 %>px" aria-label="現在時刻"></div>
+          <% end -%>
+        </div>
+      <% end -%>
+    </div>
+  </div>
+</div>

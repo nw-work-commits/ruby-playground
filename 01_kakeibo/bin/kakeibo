@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+# 使い方:
+#   ruby bin/kakeibo report  data/2026.rb             月ごとのサマリーとグラフ
+#   ruby bin/kakeibo report  data/2026.rb -m 2026-10  指定した月だけ
+#   ruby bin/kakeibo compare data/2026.rb [-m 月]      前月比 (省略時は最新月)
+#   ruby bin/kakeibo list    data/2026.rb [-m 月]      明細一覧
+#   ruby bin/kakeibo csv     data/2026.rb > out.csv    CSV 出力
+#   ruby bin/kakeibo check   data/2026.rb              予算オーバーがあれば終了コード 1
+
+require "optparse"
+require "csv"
+require_relative "../lib/kakeibo/report"
+
+options = {}
+parser = OptionParser.new do |o|
+  o.banner = "使い方: kakeibo {report|compare|list|csv|check} FILE [options]"
+  o.on("-m", "--month YYYY-MM", /\A\d{4}-\d{2}\z/, "対象の月") { options[:month] = _1 }
+end
+command, path = parser.parse(ARGV)
+abort parser.help unless command && path
+
+begin
+  ledger = Kakeibo.load(path)
+rescue Kakeibo::Error, NoMethodError => e
+  abort "#{path} の読み込みに失敗しました: #{e.message}"
+end
+report = Kakeibo::Report.new(ledger)
+
+case command
+when "report"
+  options[:month] ? report.month(options[:month]) : report.summary
+when "compare"
+  report.compare(options[:month] || ledger.months.last)
+when "list"
+  report.entries(options[:month])
+when "csv"
+  $stdout.write CSV.generate(headers: %w[date kind category title amount], write_headers: true) { |csv|
+    ledger.sort_by(&:date).each { |e| csv << [e.date, e.kind, e.category, e.title, e.amount] }
+  }
+when "check"
+  over = ledger.months.flat_map { |m| ledger.in_month(m).over_budget.map { |cat, (spent, limit)| "#{m} #{cat}: #{spent}/#{limit}" } }
+  puts over.empty? ? "予算内です 👍" : over
+  exit(over.empty?)
+else
+  abort parser.help
+end

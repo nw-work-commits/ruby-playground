@@ -1,0 +1,62 @@
+<div class="toolbar">
+  <h1 style="margin:0"><%= h @title %></h1>
+  <span class="spacer"></span>
+  <% if @game.draft -%><a class="btn" href="<%= url("/editor") %>">エディタに戻る</a><% end -%>
+  <a class="btn" href="<%= url("/") %>">ゲーム選択へ</a>
+</div>
+
+<div class="game">
+  <div>
+    <div class="terminal" id="terminal" aria-live="polite">
+      <% @game.log.each do |kind, line| -%>
+        <% if kind == :cmd -%>
+          <p class="cmd">&gt; <%= h line %></p>
+        <% else -%>
+          <p class="<%= 'title' if line.start_with?('【', '===') %>"><%= line.empty? ? "&nbsp;" : h(line) %></p>
+        <% end -%>
+      <% end -%>
+      <span id="end"></span>
+    </div>
+
+    <% if @game.finished -%>
+      <form method="post" action="<%= url("/restart") %>" style="margin-top:12px">
+        <button class="primary">もう一度遊ぶ</button>
+        <a class="btn" href="<%= url("/") %>">別のゲームを選ぶ</a>
+      </form>
+    <% else -%>
+      <form class="cmdline" method="post" action="<%= url("/play") %>">
+        <input type="text" name="command" placeholder="例: 鍵を取る / 村長と話す" aria-label="コマンド" maxlength="60" autocomplete="off" autofocus>
+        <button class="primary">実行</button>
+      </form>
+      <div class="quick">
+        <% @engine.exits.each do |dir| -%>
+          <form method="post" action="<%= url("/play") %>"><input type="hidden" name="command" value="<%= dir %>"><button>↪ <%= dir %></button></form>
+        <% end -%>
+        <% @engine.npc_names.each do |name| -%>
+          <form method="post" action="<%= url("/play") %>"><input type="hidden" name="command" value="<%= h name %>と話す"><button>💬 <%= h name %></button></form>
+        <% end -%>
+        <% %w[見る 持ち物 ヘルプ セーブ ロード].each do |cmd| -%>
+          <form method="post" action="<%= url("/play") %>"><input type="hidden" name="command" value="<%= cmd %>"><button><%= cmd %></button></form>
+        <% end -%>
+      </div>
+    <% end -%>
+  </div>
+
+  <aside class="card side">
+    <div class="room"><%= h @engine.room_name %></div>
+    <h3>持ち物</h3>
+    <% if @engine.inventory_names.empty? -%>
+      <p class="muted" style="margin:0 0 16px">なし</p>
+    <% else -%>
+      <ul><% @engine.inventory_names.each do |name| -%><li><%= h name %></li><% end -%></ul>
+    <% end -%>
+    <h3>ターン</h3>
+    <p style="margin:0"><%= @game.state.turns %></p>
+  </aside>
+</div>
+
+<script>
+  // ログの一番下を表示する
+  const t = document.getElementById("terminal");
+  t.scrollTop = t.scrollHeight;
+</script>

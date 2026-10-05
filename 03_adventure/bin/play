@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+# 使い方: ruby bin/play            (メニューからゲームを選ぶ)
+#         ruby bin/play village    (ゲーム ID を指定)
+#         ruby bin/play path/to/my_game.rb  (自作ゲームを遊ぶ)
+require_relative "../lib/adventure"
+require_relative "../lib/adventure/script"
+
+arg = ARGV.shift
+if arg&.end_with?(".rb")
+  require File.expand_path(arg)
+else
+  Dir[File.expand_path("../games/*.rb", __dir__)].sort.each { require _1 }
+  # Web のエディタで保存したシナリオ (安全な DSL だけで書かれたもの)
+  Adventure::Script.load_dir(File.expand_path("../games/custom", __dir__))
+end
+
+games = Adventure.registry.values
+world =
+  if games.size == 1 then games.first
+  elsif arg then Adventure.registry.fetch(arg.to_sym) { abort "ゲーム #{arg} はありません: #{Adventure.registry.keys.join(', ')}" }
+  else
+    puts "遊ぶゲームを選んでください:"
+    games.each.with_index(1) { |g, i| puts "  #{i}. #{g.title}" }
+    print "> "
+    number = $stdin.gets.to_i
+    abort "1〜#{games.size} の番号で選んでください" unless number.between?(1, games.size)
+    games[number - 1]
+  end
+
+save_dir = File.expand_path("../saves", __dir__)
+Dir.mkdir(save_dir) unless Dir.exist?(save_dir)
+Adventure::Engine.new(world, save_path: File.join(save_dir, "#{world.id}.sav")).run

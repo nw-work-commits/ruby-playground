@@ -1,0 +1,61 @@
+<%= erb :_header, layout: false %>
+
+<div class="card">
+  <%= erb :_form, layout: false %>
+
+  <div class="bar">
+    <span>
+      <% TodoApp::FILTERS.each do |key, (label, _)| -%>
+        <a href="<%= url("/?filter=#{key}") %>" class="<%= 'on' if @filter == key %>"><%= label %></a>
+      <% end -%>
+    </span>
+    <span>
+      <% TodoApp::SORTS.each do |key, (label, _)| -%>
+        <a href="<%= url("/?sort=#{key}") %>" class="<%= 'on' if @sort == key %>"><%= label %></a>
+      <% end -%>
+    </span>
+  </div>
+
+  <% if @todos.empty? -%>
+    <p class="empty">タスクはありません</p>
+  <% else -%>
+    <ul>
+      <% @todos.each do |todo| -%>
+        <li class="<%= 'done' if todo.done %>">
+          <form method="post" action="<%= url("/todos/#{todo.id}/toggle") %>">
+            <button class="check" title="完了切り替え" aria-label="完了切り替え"><%= '✓' if todo.done %></button>
+          </form>
+          <span class="title">
+            <%= h todo.title %>
+            <% if todo.time_label || todo.cost -%>
+              <span class="meta">
+                <% if todo.time_label -%><span>🕘 <%= todo.time_label %></span><% end -%>
+                <% if todo.cost -%><span>¥<%= todo.cost.to_s.reverse.scan(/\d{1,3}/).join(",").reverse %></span><% end -%>
+              </span>
+            <% end -%>
+          </span>
+          <% if todo.due -%>
+            <span class="due <%= 'overdue' if todo.overdue? %><%= 'today' if todo.due_today? %><%= 'repeat' if todo.repeating? %>"><%= todo.done ? todo.due_date.strftime("%-m/%-d") : due_label(todo) %></span>
+          <% end -%>
+          <form method="post" action="<%= url("/todos/#{todo.id}") %>">
+            <input type="hidden" name="_method" value="delete">
+            <button class="del" title="削除" aria-label="削除">✕</button>
+          </form>
+        </li>
+      <% end -%>
+    </ul>
+  <% end -%>
+
+  <footer>
+    <span>
+      残り <%= @remaining %> 件
+      <% if @overdue.positive? -%><span class="warn">(期限切れ <%= @overdue %> 件)</span><% end -%>
+    </span>
+    <form method="post" action="<%= url("/todos/done") %>">
+      <input type="hidden" name="_method" value="delete">
+      <button>完了済みを削除</button>
+    </form>
+  </footer>
+</div>
+
+<p class="note">JSON API: <a href="<%= url("/api/todos") %>">GET /api/todos</a> ・ POST /api/todos</p>

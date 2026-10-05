@@ -1,0 +1,26 @@
+<form class="add" method="post" action="<%= url("/todos") %>">
+  <input type="hidden" name="back" value="<%= h @back || "/" %>">
+  <input type="text" name="title" placeholder="やること・予定を入力…" aria-label="やること" required autofocus>
+  <input type="date" name="due" aria-label="日付" value="<%= @default_date %>">
+  <button class="primary">追加</button>
+  <details class="more">
+    <summary>時刻・繰り返し・費用</summary>
+    <div class="more-grid">
+      <label>開始 <input type="time" name="start" step="300"></label>
+      <label>終了 <input type="time" name="finish" step="300"></label>
+      <label>繰り返し
+        <select name="repeat">
+          <% TodoStore::REPEATS.each do |key, label| -%><option value="<%= key %>"><%= label %></option><% end -%>
+        </select>
+      </label>
+      <label>繰り返しの終了日 <input type="date" name="until"></label>
+      <label>費用 (円) <input type="number" name="cost" min="1" step="1" placeholder="4000"></label>
+      <label>家計簿のカテゴリ
+        <select name="category">
+          <% TodoApp::CATEGORIES.each do |key, label| -%><option value="<%= key %>"><%= label %></option><% end -%>
+        </select>
+      </label>
+    </div>
+    <p class="hint">費用を入れた予定は、家計簿の <code>from_schedule</code> で支出として取り込まれます。</p>
+  </details>
+</form>

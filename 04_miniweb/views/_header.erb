@@ -1,0 +1,13 @@
+<% unless request.env["SCRIPT_NAME"].to_s.empty? -%>
+  <p class="back"><a href="/">← Ruby Playground</a></p>
+<% end -%>
+<div class="head">
+  <div>
+    <h1><img src="<%= url("/favicon.svg") %>" alt=""> TODO・日程表</h1>
+    <p class="sub">自作フレームワーク + 自作 HTTP サーバーで動いています</p>
+  </div>
+  <nav class="views" aria-label="表示切り替え">
+    <a href="<%= url("/") %>" class="<%= 'on' unless @monday %>">リスト</a>
+    <a href="<%= url("/week") %>" class="<%= 'on' if @monday %>">週</a>
+  </nav>
+</div>

@@ -1,0 +1,82 @@
+<div class="toolbar">
+  <div>
+    <h1 style="margin:0">シナリオエディタ</h1>
+    <p class="lead" style="margin:4px 0 0">Ruby の DSL でシナリオを書いて、すぐ試せます。送られたコードは Prism で構文木にしてから検査し、DSL の命令以外 (定数・<code>system</code>・<code>eval</code> など) は実行しません。</p>
+  </div>
+</div>
+
+<% if @problems -%>
+  <div class="flash error" role="alert">
+    <b><%= @problems.size %> 件の問題があります</b>
+    <ul style="margin:6px 0 0;padding-left:20px">
+      <% @problems.each do |p| -%>
+        <li><% if p.line -%><a href="#" data-line="<%= p.line %>" class="jump"><%= p.line %> 行目</a>: <% end -%><%= h p.message %></li>
+      <% end -%>
+    </ul>
+  </div>
+<% elsif @checked -%>
+  <div class="flash notice" role="status">
+    ✓ 問題ありません ─ 「<%= h @checked.title %>」 部屋 <%= @checked.rooms.size %> ・ アイテム <%= @checked.items.size %> ・ 登場人物 <%= @checked.npcs.size %> ・ レシピ <%= @checked.recipes.size %>
+  </div>
+<% end -%>
+
+<form method="post" action="<%= url("/editor") %>" class="editor-form">
+  <div class="editor">
+    <pre class="gutter" aria-hidden="true" id="gutter"></pre>
+    <textarea name="source" id="source" spellcheck="false" aria-label="シナリオ" wrap="off"><%= h @source %></textarea>
+  </div>
+  <div class="toolbar" style="margin-top:12px">
+    <button name="action" value="check">検査する</button>
+    <button name="action" value="play" class="primary">▶ 試しに遊ぶ</button>
+    <span class="spacer"></span>
+    <button name="action" value="save">保存して一覧に追加</button>
+  </div>
+</form>
+
+<details class="card" style="margin-top:8px">
+  <summary style="cursor:pointer;font-weight:600">使える命令の一覧</summary>
+  <div class="table-scroll" style="margin-top:12px">
+    <table>
+      <tbody>
+        <tr><td><code>game "題名", id: :xxx do ... end</code></td><td>全体。id は英数字 (組み込みと同じ id は不可)</td></tr>
+        <tr><td><code>intro</code> / <code>start :部屋</code></td><td>導入文と、最初の部屋</td></tr>
+        <tr><td><code>item :id, "名前", "説明", aliases: %w[別名], fixed: true</code></td><td>アイテム (fixed は持ち運べない置物)</td></tr>
+        <tr><td><code>room :id, "名前" do ... end</code></td><td><code>desc</code> <code>exits_to north: :部屋</code> <code>items</code> <code>npcs</code> <code>dark!</code></td></tr>
+        <tr><td><code>lock :north, with: :鍵 / password: "合言葉" / flag: :フラグ, message:, unlocked:</code></td><td>出口に鍵をかける</td></tr>
+        <tr><td><code>npc :id, "名前" do ... end</code></td><td><code>line "セリフ", when: :フラグ, sets:, gives:</code> <code>trade :欲しい物, gives:, sets:, message:</code> <code>answer %w[答え], gives:, message:</code> <code>leaves_when :フラグ</code></td></tr>
+        <tr><td><code>recipe :できる物, from: %i[材料], message:</code></td><td>「作る」で組み立てる</td></tr>
+        <tr><td><code>on_use :アイテム do |state| ... end</code></td><td>使ったとき。<code>state.flags &lt;&lt; :light</code> で暗い部屋が見える</td></tr>
+        <tr><td><code>goal "メッセージ" do |state| state.room == :部屋 end</code></td><td>クリア条件。<code>state.has?(:物)</code> <code>state.flag?(:フラグ)</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<script>
+  // 行番号の表示と、Tab キーで字下げ、エラーの行へジャンプ
+  const src = document.getElementById("source");
+  const gutter = document.getElementById("gutter");
+  const renderGutter = () => {
+    const n = src.value.split("\n").length;
+    gutter.textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+  };
+  src.addEventListener("input", renderGutter);
+  src.addEventListener("scroll", () => { gutter.scrollTop = src.scrollTop; });
+  src.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    e.preventDefault();
+    const { selectionStart: s, selectionEnd: t } = src;
+    src.setRangeText("  ", s, t, "end");
+    renderGutter();
+  });
+  document.querySelectorAll(".jump").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const line = Number(a.dataset.line);
+    const lines = src.value.split("\n");
+    const start = lines.slice(0, line - 1).join("\n").length + (line > 1 ? 1 : 0);
+    src.focus();
+    src.setSelectionRange(start, start + lines[line - 1].length);
+    src.scrollTop = (line - 5) * parseFloat(getComputedStyle(src).lineHeight);
+  }));
+  renderGutter();
+</script>

@@ -1,0 +1,40 @@
+<h1>MiniSpec</h1>
+<p class="lead">自作テストフレームワークで、4 つのアプリのテストをまとめて実行します。
+裏では <code>ruby run_specs.rb -f json</code> を別プロセスで起動しています。</p>
+
+<form class="toolbar" method="get" action="<%= url("/") %>">
+  <input type="hidden" name="run" value="1">
+  <input type="text" name="e" value="<%= h @filter %>" placeholder="名前で絞り込み (例: 星降る村)" aria-label="絞り込み" style="flex:1 1 240px">
+  <button class="primary">▶ テストを実行</button>
+  <% unless @filter.empty? -%><a class="btn" href="<%= url("/?run=1") %>">すべて実行</a><% end -%>
+</form>
+
+<% if @run_error -%>
+  <div class="flash error"><pre style="margin:0;white-space:pre-wrap"><%= h @run_error %></pre></div>
+<% elsif @report -%>
+  <% s = @report["summary"]; failures = s.fetch("failed", 0) + s.fetch("error", 0) -%>
+  <section class="card stack">
+    <div class="summary">
+      <span class="pill <%= failures.zero? ? 'pass' : 'fail' %>"><%= failures.zero? ? "✓ すべて成功" : "✗ #{failures} 件失敗" %></span>
+      <span class="pill pass"><%= s.fetch("passed", 0) %> passed</span>
+      <% if s["pending"] -%><span class="pill pend"><%= s["pending"] %> pending</span><% end -%>
+      <span class="muted" style="font-size:13px"><%= s["total"] %> 件 ・ テスト <%= format("%.3f", s["elapsed"]) %> 秒 (プロセス起動込み <%= format("%.2f", @wall) %> 秒)</span>
+    </div>
+    <% if s["total"].zero? -%>
+      <p class="muted">「<%= h @filter %>」に一致するテストはありません。</p>
+    <% else -%>
+      <div class="tree"><%= render_node(build_tree(@report["examples"])) %></div>
+    <% end -%>
+  </section>
+<% else -%>
+  <section class="card">
+    <h2>どんなテストがある?</h2>
+    <ul>
+      <li><code>01_kakeibo/spec</code> — 家計簿 DSL・定期収支・前月比</li>
+      <li><code>02_minispec/spec</code> — MiniSpec 自身 (自分で自分をテストする)</li>
+      <li><code>03_adventure/spec</code> — 2 つのシナリオを最短手順でクリアできるか、NPC との会話</li>
+      <li><code>04_miniweb/spec</code> — セッション改ざん検出・静的ファイル・TODO の HTTP 動作</li>
+    </ul>
+    <p class="muted">「▶ テストを実行」を押すと結果がここに表示されます。</p>
+  </section>
+<% end -%>
