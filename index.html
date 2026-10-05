@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruby Playground</title>
+<link rel="icon" href="web/public/favicon.svg" type="image/svg+xml">
+<style>
+  html, body { margin: 0; height: 100%; background: #fafaf8; }
+  #app { display: block; width: 100%; height: 100%; border: 0; }
+  #app[hidden] { display: none; }
+  #boot {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    font: 15px/1.6 system-ui, "Hiragino Sans", "Yu Gothic UI", sans-serif; color: #333; background: #fafaf8;
+  }
+  #boot[hidden] { display: none; }
+  #boot.busy { background: rgba(250, 250, 248, .85); }
+  #boot .bar { width: 260px; height: 4px; background: #e6e3dc; border-radius: 2px; overflow: hidden; }
+  #boot .bar i { display: block; width: 0; height: 100%; background: #cc342d; transition: width .2s; }
+  #boot small { color: #888; text-align: center; padding: 0 24px; }
+  #boot.err #msg { color: #b3261e; }
+</style>
+</head>
+<body>
+<div id="boot">
+  <div id="msg">準備しています…</div>
+  <div class="bar"><i id="prog"></i></div>
+  <small>Ruby 本体（約9MB）をブラウザに読み込んで、その中でアプリを動かします。<br>2回目からは速くなります。</small>
+</div>
+<iframe id="app" title="Ruby Playground" hidden></iframe>
+<script type="module" src="browser/boot.js"></script>
+</body>
+</html>

@@ -2,6 +2,11 @@
 
 外部 gem なし・標準ライブラリだけで作っています (Ruby 3.4)。
 
+**▶ ブラウザでそのまま動かす：https://nw-work-commits.github.io/ruby-playground/**
+
+インストール不要です。Ruby 本体 ([ruby.wasm](https://github.com/ruby/ruby.wasm)) をブラウザに読み込み、
+このリポジトリの Ruby のコードを**そのまま**ブラウザの中で動かしています（下の「ブラウザ版のしくみ」）。
+
 | ディレクトリ | アプリ | 主に使っている Ruby の仕組み |
 |---|---|---|
 | `01_kakeibo` | 家計簿 DSL + CLI | `instance_eval` / `method_missing` / ブロックを保存して後で評価 / `Enumerable` / `Data.define` / Refinements |
@@ -24,6 +29,25 @@ ruby web/server.rb     # → http://127.0.0.1:3000
 | `/adventure` | 3 つのシナリオをブラウザで遊べる。移動・会話はボタンでもできる |
 | `/adventure/editor` | シナリオを DSL で書いて、その場で試し遊び・保存 |
 | `/todo` | TODO・日程表 (リスト表示と週表示) |
+
+## ブラウザ版のしくみ
+
+サーバー版 (`ruby web/server.rb`) は、`TCPServer` で受けたリクエストから env を組み立てて
+`PLAYGROUND.call(env)` を呼んでいます。4 つのアプリはどれも `call(env)` を持つだけの Rack 方式なので、
+**「受ける部分」だけを置き換えれば、残りはそのままブラウザで動きます。** 置き換えは `browser/` の中だけで、
+アプリ側のコードは変えていません。
+
+| ファイル | 役割 |
+|---|---|
+| `index.html` / `browser/boot.js` | Ruby 本体を起動し、画面のリンクとフォームを横取りして `PLAYGROUND.call(env)` を呼ぶ。CSS や画像もサーバー版と同じくアプリに頼んで受け取る |
+| `browser/bridge.rb` | JS から受け取ったリクエストで、`MiniWeb::Server#handle` と同じ形の env を組み立てる |
+| `browser/spec_runner.rb` | テストを**もう 1 つ別の Ruby VM** で走らせる。サーバー版の「別プロセスで走らせて、サーバーの状態を汚さない」をブラウザで再現したもの |
+| `browser/wasm_env.rb` | ブラウザの Ruby との差を埋める (`socket` が無い／一時フォルダの権限を判定できない) |
+| `browser/make_manifest.rb` | ブラウザに読み込むファイルの一覧 (`browser/files.json`) を作る。ファイルを足したら `ruby browser/make_manifest.rb` |
+
+ブラウザ版の注意:
+- 家計簿・TODO・アドベンチャーのセーブなどへの書き込みは、ブラウザの中の仮のフォルダに保存されます。**ページを再読み込みすると元に戻ります**
+- 最初の 1 回は Ruby 本体 (約 9MB) の読み込みに数秒かかります。2 回目からはブラウザに残ります
 
 ## 今回の拡張
 
